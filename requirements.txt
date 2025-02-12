@@ -1,0 +1,9 @@
+subprocess
+sys
+threading
+asyncio
+time
+datetime
+pytz
+mysql
+discord
