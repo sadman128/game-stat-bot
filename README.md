@@ -3,9 +3,13 @@
 This bot counts the game time which are played in the server and diplays it in a channel. top 5 are displayed. and the stats can be reset by using a commnad zreset
 
 zmsg -> sent msg by bot
+
 zring -> drag a user twice
+
 zmoveall -> move everyone to another vc
+
 zact -> check what games are being played in the server
+
 zresetstat -> resets game stats to 0
 
 i know this is not so professional code. i just created by my own curiosity
