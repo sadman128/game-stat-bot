@@ -5,19 +5,30 @@ import asyncio
 import time
 import datetime
 import cfg
+
 config = cfg.config()
+
+packages = ["discord", "pytz", "mysql"]
+
+for package in packages:
+    try:
+        # Try importing the package
+        __import__(package)
+    except ImportError:
+        # If the package is not installed, install it
+        print(f"{package} not found. Installing...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        print(f"{package} installed successfully!")
+    finally:
+        # Import the package after installation
+        globals()[package] = __import__(package)
+
+# data base
 import pytz
 import mysql.connector
-import discord
-from discord.ext import commands
-
 
 dbconfig = {
-    "host": "",
-    "user": "",
-    "password": "",
-    "port": "",
-    "database": "",
+    
 }
 
 
@@ -27,11 +38,12 @@ def getdatabase():
         return mydb
     except mysql.connector.Error as err:
         current_time = datetime.datetime.now(pytz.timezone('Asia/Dhaka')).strftime("%d/%m/%Y %I:%M %p")
-        print("Reconnecting to Mysql --- " + current_time)
-        time.sleep(10)
+        print("Reconnecting to Mysql --- " , current_time , "Error : ", err)
+        time.sleep(45)
         return getdatabase()
 
-
+import discord
+from discord.ext import commands
 
 intents = discord.Intents.all()
 intents.members = True
@@ -47,7 +59,7 @@ async def on_ready():
     print("online")
     guild = bot.get_guild(config.GUILD)
     # role = guild.get_role(config.ROLE_USER)
-    t2 = threading.Thread(target=database_on, args=(guild,)).start()
+    t1 = threading.Thread(target=database_on, args=(guild,)).start()
     print("activity thread started")
     await gameStat()
     print("game stat thread started")
@@ -85,21 +97,21 @@ def update_database(gamename):
     gamename = gamename.replace("GAME", "")
 
     if gamename.startswith("PLAYERUNKNOWNS"):
-        gamename == "PUBG BATTLEGROUNDS"
+        gamename = "PUBG BATTLEGROUNDS"
+    if gamename.startswith("Valorant"):
+        gamename = "VALORANT"
     db = getdatabase()
     cursor = db.cursor()
     try:
-        cursor.execute(f"SELECT * FROM discord where gamename = '{gamename}';")
-        myresult = cursor.fetchall()
-        if len(myresult) > 0:
-            cursor.execute(f"UPDATE discord SET gametime = gametime+1 where gamename = '{gamename}';")
-            db.commit()
-        else:
-            cursor.execute(f"INSERT INTO discord (gamename , gametime) VALUES('{gamename}' , 1);")
-            db.commit()
+        cursor.execute("""
+            INSERT INTO discord (gamename, gametime)
+            VALUES (%s, 1)
+            ON DUPLICATE KEY UPDATE gametime = gametime + 1;
+        """, (gamename,))
+        db.commit()
     except mysql.connector.Error as err:
         print(f"Updte_Error: {err}")
-        time.sleep(5)
+        time.sleep(20)
         update_database(gamename)
     db.close()
 
@@ -178,7 +190,6 @@ async def moveall(ctx):
         victim = current_channel.members
         for member in victim:
             await member.move_to(new_channel)
-            time.sleep(1)
         await ctx.send("moving all")
     else:
         await ctx.reply("you don't have role")
@@ -220,8 +231,10 @@ async def act(ctx):
                 for activity in member.activities:
                     if activity.type == discord.ActivityType.playing:
                         check = False
-                        # await ctx.send(f"**{member.display_name}** is currently playing: **{activity.name}**")
-                        str += f"**{member.display_name}** is currently playing: **{activity.name}**\n"
+                        name = activity.name
+                        if name.startswith("Valorant"):
+                            name = "VALORANT"
+                        str += f"**{member.display_name}** is currently playing: **{name}**\n"
                         break
                     elif activity.type == discord.ActivityType.streaming:
                         check = False
@@ -256,8 +269,6 @@ async def gameStat():
             print(f"All messages in #{channel.name} have been deleted.")
         except Exception as e:
             print(f"An error occurred: {e}")
-    else:
-        return
 
     old_time = "Time could not found"
     db = getdatabase()
@@ -428,6 +439,7 @@ async def resetstat(ctx):
         await resetGameStat(current_time, ctx)
         await log_channel.send(embed=embed)
         await ctx.reply("Done")
+        print("Stat reset complete")
     else:
         await ctx.reply("you dont have permission")
 
