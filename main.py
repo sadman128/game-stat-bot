@@ -28,7 +28,11 @@ import pytz
 import mysql.connector
 
 dbconfig = {
-    
+    "host": "",
+    "user": "",
+    "password": "",
+    "port": "",
+    "database": "",
 }
 
 
@@ -154,11 +158,11 @@ async def ring(ctx):
             if member.voice is not None:
                 voice_channel = member.voice.channel
                 await member.move_to(sleep_channel)
-                time.sleep(1)
+                time.sleep(0.5)
                 await member.move_to(voice_channel)
-                time.sleep(1)
+                time.sleep(0.5)
                 await member.move_to(sleep_channel)
-                time.sleep(1)
+                time.sleep(0.5)
                 await member.move_to(voice_channel)
             else:
                 await ctx.reply(f"<@{member.id}> is not in vc")
