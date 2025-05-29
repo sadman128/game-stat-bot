@@ -1,5 +1,5 @@
 ## game-stat-bot
-# A discord bot that counts total play time of games in a server
+# A discord bot that counts total play time of games in a discord server
 This bot counts the game time which are played in the server and diplays it in a channel. top 5 are displayed. and the stats can be reset by using a commnad zreset
 
 zmsg -> sent msg by bot
