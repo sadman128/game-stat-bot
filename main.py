@@ -42,9 +42,10 @@ def getdatabase():
         return mydb
     except mysql.connector.Error as err:
         current_time = datetime.datetime.now(pytz.timezone('Asia/Dhaka')).strftime("%d/%m/%Y %I:%M %p")
-        print("Reconnecting to Mysql --- " , current_time , "Error : ", err)
+        print("Reconnecting to Mysql --- ", current_time, "Error : ", err)
         time.sleep(45)
         return getdatabase()
+
 
 import discord
 from discord.ext import commands
@@ -91,27 +92,31 @@ def update_database(gamename):
     gamename = gamename.replace("'", "")
     gamename = gamename.replace("\"", "")
     gamename = gamename.replace(":", "")
-
-    if gamename == "Delta Force Game":
-        gamename == "Delta Force"
-
     gamename = gamename.strip(" ")
     gamename = gamename.replace("Game", "")
     gamename = gamename.replace("game", "")
     gamename = gamename.replace("GAME", "")
 
+    if gamename == "Delta Force Game":
+        gamename = "Delta Force"
     if gamename.startswith("PLAYERUNKNOWNS"):
         gamename = "PUBG BATTLEGROUNDS"
     if gamename.startswith("Valorant"):
         gamename = "VALORANT"
+    if gamename.startswith("Assetto Corsa"):
+        gamename = "Assetto Corsa"
+    if "Rainbow Six" in gamename:
+        gamename = "Rainbow Six Siege"
+
+
     db = getdatabase()
     cursor = db.cursor()
     try:
         cursor.execute("""
-            INSERT INTO discord (gamename, gametime)
-            VALUES (%s, 1)
-            ON DUPLICATE KEY UPDATE gametime = gametime + 1;
-        """, (gamename,))
+                INSERT INTO discord (gamename, gametime)
+                VALUES (%s, 1)
+                ON DUPLICATE KEY UPDATE gametime = gametime + 1;
+            """, (gamename,))
         db.commit()
     except mysql.connector.Error as err:
         print(f"Updte_Error: {err}")
@@ -383,23 +388,48 @@ def getgames():
 async def on_message_delete(message):
     if not message.guild:
         return
+
     guild = message.guild
     log_channel = guild.get_channel(config.DELETE_LOG)
 
     if not log_channel:
-        print(f"Log channel '{log_channel}'-channel not found in guild '{message.guild.name}'")
+        print(f"Log channel '{log_channel}' not found in guild '{message.guild.name}'")
         return
 
     if message.author.bot:
         return
 
-    embed = discord.Embed(title="Message Deleted", color=discord.Color.from_rgb(255, 0, 0))
+    embed = discord.Embed(
+        title="Message Deleted",
+        color=discord.Color.from_rgb(255, 0, 0),
+        timestamp=discord.utils.utcnow()
+    )
     embed.add_field(name="Author", value=f"{message.author} ({message.author.id})", inline=False)
     embed.add_field(name="Channel", value=f"#{message.channel.name}", inline=False)
-    embed.add_field(name="Content", value=message.content or "Embed/Attachment", inline=False)
+
+    # Handle text content
+    if message.content:
+        embed.add_field(name="Content", value=message.content, inline=False)
+
+    # Handle attachments (images, gifs, files, etc.)
+    if message.attachments:
+        attachment_urls = [att.url for att in message.attachments]
+
+        # If first attachment is an image/gif, preview it
+        first_attachment = message.attachments[0]
+        if first_attachment.content_type and first_attachment.content_type.startswith("image/"):
+            embed.set_image(url=first_attachment.url)
+
+        embed.add_field(
+            name="Attachments",
+            value="\n".join(attachment_urls),
+            inline=False
+        )
+
     embed.set_footer(text=f"Message ID: {message.id} • Author ID: {message.author.id}")
 
     await log_channel.send(embed=embed)
+
 
 
 @bot.command(name="resetstat")
@@ -465,6 +495,55 @@ async def resetGameStat(current_time, ctx):
             print(f"ResetStat2_Error: {err}")
             ctx.reply("Something went wrong please try again later")
         db.close()
+
+
+TARGET_ID = 634826720293290004  # protected user
+
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if member.id != TARGET_ID:
+        return
+
+    if after.channel:
+        server_muted = after.mute and not after.self_mute
+        server_deafened = after.deaf and not after.self_deaf
+
+        if server_muted or server_deafened:
+            try:
+                if server_muted:
+                    await member.edit(mute=False)
+                if server_deafened:
+                    await member.edit(deafen=False)
+            except Exception as e:
+                print(f"Failed to unmute/undeafen {member}: {e}")
+
+    if member.id == TARGET_ID and before.channel and not after.channel:
+        print("Step 1: Target disconnected, checking who did it...")
+        await asyncio.sleep(2)  # wait for audit logs to update
+        guild = member.guild
+        try:
+            print("Step 2: Fetching recent audit logs (member_disconnect)...")
+            async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.member_disconnect):
+                print(f"Step 3: Found log: executor={entry.user}, target={entry.target}")
+                print(entry)
+                if entry.user is None:
+                    print("  -> Skipping: executor is None")
+                    return
+                now = time.time()
+                log_time = entry.created_at.timestamp()
+                if now - log_time > 2:
+                    print("  -> Log is too old, ignoring.")
+                    return
+                executor = entry.user
+                if executor.voice and executor.voice.channel:
+                    await executor.move_to(None)
+                    print(f"Step 4: {executor.name} was disconnected for disconnecting the target!")
+                else:
+                    print(f"Step 4: {executor.name} is not in a voice channel, cannot disconnect.")
+
+        except Exception as e:
+            print(f"Error checking audit logs: {e}")
 
 
 bot.run(config.BOT_TOKEN)
