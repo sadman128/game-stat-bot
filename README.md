@@ -97,7 +97,7 @@ git clone https://github.com/sajid128/game-stat-bot.git
 
 <!-- Wide leaderboard images -->
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/e5a01cbf-6f66-4ade-8a36-82a9ee643cce" width="48%" />
+  <img src="https://github.com/user-attachments/assets/2545cb3b-f81f-4333-ad78-7596ad0a91af" width="48%" />
   <img src="https://github.com/user-attachments/assets/7c8112a8-d08c-4d43-8c45-f148b1544780" width="48%" />
 </p>
 
