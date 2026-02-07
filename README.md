@@ -1,18 +1,98 @@
-## game-stat-bot
-# A discord bot that counts total play time of games in a discord server
-This bot counts the game time which are played in the server and diplays it in a channel. top 5 are displayed. and the stats can be reset by using a commnad zreset
+# 🎮 Game Stat Discord Bot
 
-zmsg -> sent msg by bot
+![Python](https://img.shields.io/badge/Python-3.x-blue)
+![Discord.py](https://img.shields.io/badge/discord.py-Bot-blueviolet)
+![Database](https://img.shields.io/badge/Database-MySQL-orange)
+![Status](https://img.shields.io/badge/Status-Active-success)
+![License](https://img.shields.io/badge/License-Personal-lightgrey)
 
-zring -> drag a user twice
+---
 
-zmoveall -> move everyone to another vc
+## 📌 About
 
-zact -> check what games are being played in the server
+A multi-utility Discord bot that tracks **game playtime** of users inside voice channels and displays statistics in real time.
 
-zresetstat -> resets game stats to 0
+The bot monitors users who are playing games while connected to voice channels, stores playtime in a database, and displays the **Top 5 most played games** along with user activity statistics.
 
-i know this is not so professional code. i just created by my own curiosity
+> ⚠️ This project was created mainly out of curiosity and learning. The code is not production optimized so do not judge.
+
+---
+
+## ✨ Features
+
+### Game Tracking
+- Tracks games played in voice channels  
+- Shows Top 5 most played games  
+- Tracks VC activity time  
+- Supports stat reset  
+
+### AI Chat (Optional)
+- LLM chat support  
+- Basic conversation memory  
+- Role restricted access  
+
+### Voice Utilities
+- Ring users  
+- Move users between voice channels  
+- VC join/leave logging  
+- Anti mass-disconnect  
+- Protected user mode  
+
+### Logging & Moderation
+- Deleted message logging  
+- Role change logging  
+- Admin DM command  
+
+### Fun
+- Coin flip  
+- Rock Paper Scissors  
+
+---
+
+## 📌 Commands
+
+| Command | Description |
+|----------|-------------|
+| `zping` | Check bot status |
+| `zmsg` | Send message using bot (Admin only) |
+| `zring @user` | Drag user between VC twice |
+| `zmoveall #channel` | Move everyone to another VC |
+| `zact` | Show games currently played in server |
+| `zresetstat` | Reset game & user stats |
+| `znodc` | Toggle anti disconnect system |
+| `zflip` | Flip coin |
+| `zrps @user` | Rock Paper Scissors |
+
+---
+
+## 📊 How It Works
+
+1. Bot scans voice channels every minute
+2. Detects users playing games
+3. Stores playtime in MySQL database
+4. Updates leaderboard automatically
+5. Admin can reset stats anytime
+
+---
+
+## 🧰 Tech Stack
+
+- Python 3
+- discord.py
+- MySQL
+- OpenAI / DeepSeek API (Optional)
+- Asyncio + Threading
+- pytz
+
+---
+
+## ⚙️ Installation
+
+### 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/sajid128/game-stat-bot.git
+```
 
 ![image](https://github.com/user-attachments/assets/d50b7efb-418a-4d44-a018-32ddad6015ed)
 ![image](https://github.com/user-attachments/assets/387da152-d952-4655-b8e7-320ec2d663df)
