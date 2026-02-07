@@ -117,7 +117,7 @@ git clone https://github.com/sajid128/game-stat-bot.git
 
 <!-- Tall / narrow images grouped -->
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/917c1727-ca1c-44c0-8abb-ef58eb848792" width="30%" />
+  <img src="https://github.com/user-attachments/assets/917c1727-ca1c-44c0-8abb-ef58eb848792" width="45%" />
   <img src="https://github.com/user-attachments/assets/7e416632-5850-4acb-b5ae-06e0270cf719" width="45%" />
 </p>
 
