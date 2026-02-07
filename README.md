@@ -97,4 +97,6 @@ git clone https://github.com/sajid128/game-stat-bot.git
 ![image](https://github.com/user-attachments/assets/d50b7efb-418a-4d44-a018-32ddad6015ed)
 ![image](https://github.com/user-attachments/assets/387da152-d952-4655-b8e7-320ec2d663df)
 ![image](https://github.com/user-attachments/assets/704956e9-ddc0-4218-9738-f92bc47b851c)
+<img width="1257" height="897" alt="image" src="https://github.com/user-attachments/assets/bec4764b-c05c-4b79-b3a0-46a896f3f54e" />
+
 
