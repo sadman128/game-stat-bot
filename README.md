@@ -104,11 +104,9 @@ git clone https://github.com/sajid128/game-stat-bot.git
 ---
 
 <!-- Very wide activity screenshot -->
-<p align="left">
+<p align="center">
   <img src="https://github.com/user-attachments/assets/420d0953-30c6-4f72-b6f9-3ba2901dc688" width="65%" />
-</p>
-<p align="right">
-<img src="https://github.com/user-attachments/assets/90cdcf29-04b2-478e-967d-7397d48e3605" width="30%" />
+  <img src="https://github.com/user-attachments/assets/90cdcf29-04b2-478e-967d-7397d48e3605" width="30%" />
 </p>
 
 ---
