@@ -1,6 +1,7 @@
 import os
+import random
+
 import certifi
-# Force Python to use certifi CA certificates
 os.environ['SSL_CERT_FILE'] = certifi.where()
 
 import subprocess
@@ -12,10 +13,9 @@ import datetime
 import cfg
 import re
 import io
-
 config = cfg.config()
 
-packages = ["discord", "pytz", "mysql","re", "io"]
+packages = ["discord", "pytz", "mysql","re", "io", "openai"]
 
 for package in packages:
     try:
@@ -34,18 +34,9 @@ for package in packages:
 import pytz
 import mysql.connector
 
-dbconfig = {
-    "host": "",
-    "user": "avnadmin",
-    "password": "",
-    "port": "23326",
-    "database": "gamestat",
-}
-
-
 def getdatabase():
     try:
-        mydb = mysql.connector.connect(**dbconfig)
+        mydb = mysql.connector.connect(**config.DB_CONFIG)
         return mydb
     except mysql.connector.Error as err:
         current_time = datetime.datetime.now(pytz.timezone('Asia/Dhaka')).strftime("%d/%m/%Y %I:%M %p")
@@ -61,16 +52,17 @@ intents = discord.Intents.all()
 intents.members = True
 intents.messages = True
 intents.message_content = True
-bot = commands.Bot(command_prefix="z", intents=intents)
+bot = commands.Bot(command_prefix="z", intents=intents, help_command=None)
 
 @bot.event
 async def on_ready():
     activity = discord.Activity(type=discord.ActivityType.listening, name="yappin")
     await bot.change_presence(status=discord.Status.idle, activity=activity)
     print("online")
+    threading.Thread(target=ai_worker, daemon=True).start()
+    print("ai worker started")
     guild = bot.get_guild(config.GUILD)
-    # role = guild.get_role(config.ROLE_USER)
-    t1 = threading.Thread(target=database_on, args=(guild,)).start()
+    threading.Thread(target=database_on, args=(guild,)).start()
     print("activity thread started")
     await gameStat()
     print("game stat thread started")
@@ -155,96 +147,100 @@ async def hello(ctx):
         await ctx.reply("you don't have role")
 
 @bot.command(name="ring")
-async def ring(ctx):
-    user = ctx.author
-    guild = ctx.guild
-    role = guild.get_role(config.ROLE_USER)
-    if role in user.roles:
-        await ctx.send("got you dude")
-        message = ctx.message.content
-        message = message.strip("zring")
-        victim = message.split("@")
-        newVictim = []
-        for i in victim:
-            i = i.strip("<> ")
-            if i != "":
-                newVictim.append(int(i))
+async def ring(ctx, member: discord.Member):
+    role = ctx.guild.get_role(config.ROLE_USER)
 
-        for i in newVictim:
-            member = ctx.guild.get_member(i)
-            sleep_channel = ctx.guild.afk_channel
-            if member.voice is not None:
-                voice_channel = member.voice.channel
-                await member.move_to(sleep_channel)
-                time.sleep(0.5)
-                await member.move_to(voice_channel)
-                time.sleep(0.5)
-                await member.move_to(sleep_channel)
-                time.sleep(0.5)
-                await member.move_to(voice_channel)
-            else:
-                await ctx.reply(f"<@{member.id}> is not in vc")
-
-
-    else:
+    if role not in ctx.author.roles:
         await ctx.author.send("you don't have role")
+        return
+    sleep_channel = ctx.guild.afk_channel
+    if sleep_channel is None:
+        await ctx.send("⚠️ This server has no AFK channel set.")
+        return
+
+    if not member.voice or not member.voice.channel:
+        await ctx.send(f"{member.mention} is not in vc")
+        return
+
+    voice_channel = member.voice.channel
+    await ctx.send("got you dude")
+    for _ in range(2):
+        await member.move_to(sleep_channel)
+        await asyncio.sleep(0.5)
+        await member.move_to(voice_channel)
+        await asyncio.sleep(0.5)
+    return
 
 @bot.command(name="moveall")
-async def moveall(ctx):
+async def moveall(ctx, channel: discord.VoiceChannel):
     user = ctx.author
-    guild = ctx.guild
-    role = guild.get_role(config.ROLE_USER)
+    role = ctx.guild.get_role(config.ROLE_USER)
 
-    if role in user.roles:
-
-        message = ctx.message.content
-        message = message.strip("zmoveall")
-        message = message.strip("<#> ")
-        if message == "":
-            await ctx.reply("specify a channel nigger | type \"#![channel_name] \" ")
-            return
-        if ctx.author.voice is None:
-            await ctx.reply("you must be connected in a voice channel")
-            return
-        new_channel = ctx.guild.get_channel(int(message))
-        current_channel = ctx.author.voice.channel
-        victim = current_channel.members
-        for member in victim:
-            await member.move_to(new_channel)
-        await ctx.send("moving all")
-    else:
+    if role not in user.roles:
         await ctx.reply("you don't have role")
+        return
 
+    if not user.voice or not user.voice.channel:
+        await ctx.reply("you must be connected in a voice channel")
+        return
 
-@bot.command(name="cmd")
-async def cmd(ctx):
-    str = "Help text gugu gaga brains \n\nuse ``zring``<space><mention a user | use ``@``> to ring him \n\nuse ``zmoveall``<space><mention a voice channel | ``use #!``> to move all user to another channel\n\nend for now suggest more feature"
-    await ctx.reply(str)
+    current_channel = user.voice.channel
+
+    if current_channel == channel:
+        await ctx.reply("you are already in that channel")
+        return
+
+    moved = 0
+    for member in current_channel.members:
+        try:
+            await member.move_to(channel)
+            moved += 1
+        except discord.Forbidden:
+            pass
+
+    await ctx.send(f"🔊 moving all — {moved} members moved")
+
+@bot.command(name="help")
+async def help(ctx):
+    msg = "All commands for **gugu gaga** brains 🌻. Most of these works with <bot-cum> role \n\n"
+    msg += "> Use ``zring`` <mention a user | use ``@``> to ring them\n"
+    msg += "> Use ``zmoveall`` <mention a voice channel | use ``#!``> to move all users to another channel\n"
+    msg += "> Use ``zact`` to get the **activity** of current VC members\n"
+    msg += "> Use ``zflip`` to flip a **coin** (it's totally random — believe me or fuck off)\n"
+    msg += "> Use ``zrps`` to play **Rock, Paper, Scissors**\n"
+    msg += "> Use ``zping`` to get a **pong**\n"
+    msg += "> Use ``zcheck`` to check if you have the config **role**\n"
+    msg += "> Use ``zmsg`` <your message> to resend your message using the **bot**\n"
+    msg += "> Use ``znodc`` to turn off **no-disconnect** mode\n"
+    msg += "> Use ``zresetstat`` to reset all **stat data** (admin only)\n"
+
+    await ctx.reply(msg)
 
 @bot.command(name="msg")
-async def cmd(ctx):
+async def msg(ctx, *, msg: str = None):
     user = ctx.author
-    guild = ctx.guild
-    role = guild.get_role(config.ROLE_ADMIN)
+    role = ctx.guild.get_role(config.ROLE_ADMIN)
+    if role not in user.roles:
+        await ctx.message.delete()
+        await user.send("You don't have the required role to use this command.")
+        return
+    files = []
+    for attachment in ctx.message.attachments:
+        try:
+            files.append(await attachment.to_file())
+        except Exception as e:
+            print(f"Failed to get attachment: {e}")
+    if not msg and not files:
+        await user.send("⚠️ You must provide a message or an attachment.")
+        return
 
-    if role in user.roles:
-        msg = ctx.message.content
-        msg = msg.removeprefix("zmsg ").strip()
-        files = []
-        for attachment in ctx.message.attachments:
-            try:
-                fp = await attachment.to_file()
-                files.append(fp)
-            except Exception as e:
-                print(f"Failed to get attachment: {e}")
+    try:
         await ctx.message.delete()
-        if files:
-            await ctx.send(content=msg if msg else None, files=files)
-        else:
-            await ctx.send(msg)
-    else:
-        await ctx.message.delete()
-        await ctx.author.send("You don't have the required role to use this command.")
+    except Exception as e:
+        print(f"Failed to delete message: {e}")
+        return
+
+    await ctx.send(content=msg, files=files if files else None)
 
 @bot.command(name="act")
 async def act(ctx):
@@ -744,7 +740,6 @@ async def dm_mode(ctx, member: discord.Member, *, dm_message: str):
         await ctx.send("⚠️ An error occurred.")
         print(e)
 
-import discord
 
 @bot.event
 async def on_member_update(before, after):
@@ -790,5 +785,196 @@ async def on_member_update(before, after):
 
     await log_channel.send(embed=embed)
 
+
+@bot.command(name="flip")
+async def flip(ctx):
+    msg = await ctx.send("Flipping a coin...")
+    result = random.choice(["It's **Heads**!", "It's **Tails**!"])
+    await asyncio.sleep(3)
+    await msg.edit(content=result)
+
+
+@bot.command(name="rps")
+async def rps(ctx, opponent: discord.Member):
+
+    if opponent.bot:
+        await ctx.reply("❌ You can't play with a bot.")
+        return
+
+    if opponent == ctx.author:
+        await ctx.reply("❌ You can't play against yourself.")
+        return
+
+    choices = {}
+
+    class RPSView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=300)
+
+        @discord.ui.select(
+            placeholder="Choose Rock, Paper, or Scissors",
+            options=[
+                discord.SelectOption(label="Rock", emoji="✊"),
+                discord.SelectOption(label="Paper", emoji="✋"),
+                discord.SelectOption(label="Scissors", emoji="✌️"),
+            ],
+        )
+        async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
+
+            if interaction.user not in (ctx.author, opponent):
+                await interaction.response.send_message(
+                    "❌ You are not part of this game!",
+                    ephemeral=True
+                )
+                return
+
+            if interaction.user.id in choices:
+                await interaction.response.send_message(
+                    "❌ You have already made your choice!",
+                    ephemeral=True
+                )
+                return
+
+            choices[interaction.user.id] = select.values[0].lower()
+
+            await interaction.response.send_message(f"✅ You selected **{select.values[0]}**",ephemeral=True)
+
+            if len(choices) < 2:
+                return
+
+            p1 = ctx.author
+            p2 = opponent
+
+            c1 = choices[p1.id]
+            c2 = choices[p2.id]
+
+            def get_result():
+                if c1 == c2:
+                    return f"🤝 **It's a draw!** Both chose **{c1.capitalize()}**"
+                if (
+                    (c1 == "rock" and c2 == "scissors") or
+                    (c1 == "paper" and c2 == "rock") or
+                    (c1 == "scissors" and c2 == "paper")
+                ):
+                    return f"🎉 **{p1.mention} wins!** ({c1.capitalize()} beats {c2.capitalize()})"
+                return f"🎉 **{p2.mention} wins!** ({c2.capitalize()} beats {c1.capitalize()})"
+
+            # ---------------------------------------
+            await interaction.message.edit(
+                content="✊ ✋ ✌️ **Rock...**",
+                view=None
+            )
+            await asyncio.sleep(1)
+            await interaction.message.edit(
+                content="✊ ✋ ✌️ **Rock... Paper...**",
+                view=None
+            )
+            await asyncio.sleep(1)
+            await interaction.message.edit(
+                content="✊ ✋ ✌️ **Rock... Paper... Scissors...**",
+                view=None
+            )
+            await asyncio.sleep(2)
+            # ------------------------------------------
+
+            await interaction.message.edit(
+                content=(
+                    f"🎮 **Rock Paper Scissors**\n\n"
+                    f"{p1.mention} chose **{c1.capitalize()}**\n"
+                    f"{p2.mention} chose **{c2.capitalize()}**\n\n"
+                    f"{get_result()}"
+                )
+            )
+            self.stop()
+
+    await ctx.reply(
+        f"🎮 **Rock Paper Scissors**\n"
+        f"{ctx.author.mention} vs {opponent.mention}\n\n"
+        f"Both players, make your move:",
+        view=RPSView()
+    )
+
+
+from openai import OpenAI
+import queue
+from collections import deque
+
+client = OpenAI(
+    api_key=config.AI_TOKEN,
+    base_url=config.AI_BASE_URL
+)
+
+conversation_memory = deque(maxlen=6)
+
+message_queue = queue.Queue(maxsize=50)
+stop_event = threading.Event()
+
+@bot.event
+async def on_message(message):
+    await bot.process_commands(message)
+    if message.author.bot:
+        return
+    if message.channel.id != config.AI_CHANNEL:
+        return
+
+    if not any(role.id == config.ROLE_USER for role in message.author.roles):
+        await message.reply("❌ You need the **[bot-cum]** role to use this channel.")
+        return
+
+    if message_queue.full():
+        await message.reply("⏳ AI is busy, try again later.")
+        return
+
+    message_queue.put(message)
+
+def ai_worker():
+    loop = bot.loop
+
+    while not stop_event.is_set():
+        message = message_queue.get()
+        try:
+            reply = get_ai_reply_sync(f"{message.author.mention} : {' '.join(message.content.split())}")
+
+            conversation_memory.append({message.author.mention: message.content})
+            conversation_memory.append({"ai reply" : reply})
+
+            asyncio.run_coroutine_threadsafe(
+                send_reply(message, reply),
+                loop
+            )
+        except Exception as e:
+            asyncio.run_coroutine_threadsafe(
+                send_reply(message, "❌ AI error occurred."),
+                loop
+            )
+        finally:
+            message_queue.task_done()
+
+async def send_reply(message, reply):
+    async with message.channel.typing():
+        await message.reply(reply)
+
+def get_ai_reply_sync(user_message: str) -> str:
+    response = client.chat.completions.create(
+        #model="openai/gpt-oss-120b",
+	    model = "deepseek-ai/DeepSeek-V3-0324",
+        messages=[
+            {"role": "system", "content": config.AI_SYSTEM_PROMPT},
+            {"role": "assistant", "content": f"last few conversations -> {conversation_memory}"},
+            {"role": "user", "content": user_message}
+        ],
+        stream=False,
+        stream_options={
+            "include_usage": False,
+            "continuous_usage_stats": False
+        },
+        top_p=1,
+        max_tokens=400,
+        temperature=1,
+        presence_penalty=0,
+        frequency_penalty=0
+    )
+    reply = response.choices[0].message.content
+    return reply[:1800] if reply else ":zipper_mouth:"
 
 bot.run(config.BOT_TOKEN)
