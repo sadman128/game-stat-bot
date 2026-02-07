@@ -1,9 +1,5 @@
-subprocess
-sys
-threading
-asyncio
-time
-datetime
+discord.py
 pytz
-mysql
-discord
+mysql-connector-python
+certifi
+openai
