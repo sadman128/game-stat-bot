@@ -62,7 +62,7 @@ The bot monitors users who are playing games while connected to voice channels, 
 | `znodc` | Toggle anti disconnect system |
 | `zflip` | Flip coin |
 | `zrps @user` | Rock Paper Scissors |
-
+| `zdm @user message` | Send dm message |
 ---
 
 ## 📊 How It Works
