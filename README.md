@@ -94,9 +94,35 @@ The bot monitors users who are playing games while connected to voice channels, 
 git clone https://github.com/sajid128/game-stat-bot.git
 ```
 
-![image](https://github.com/user-attachments/assets/d50b7efb-418a-4d44-a018-32ddad6015ed)
-![image](https://github.com/user-attachments/assets/387da152-d952-4655-b8e7-320ec2d663df)
-![image](https://github.com/user-attachments/assets/704956e9-ddc0-4218-9738-f92bc47b851c)
-<img width="1257" height="897" alt="image" src="https://github.com/user-attachments/assets/bec4764b-c05c-4b79-b3a0-46a896f3f54e" />
+## 📷 Screenshots
+
+<!-- Wide leaderboard images -->
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/e5a01cbf-6f66-4ade-8a36-82a9ee643cce" width="80%" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/7c8112a8-d08c-4d43-8c45-f148b1544780" width="80%" />
+</p>
+
+---
+
+<!-- Very wide activity screenshot -->
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/420d0953-30c6-4f72-b6f9-3ba2901dc688" width="90%" />
+</p>
+
+---
+
+<!-- Tall / narrow images grouped -->
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/b53d5100-5798-435b-92a1-18870166759d" width="30%" />
+  <img src="https://github.com/user-attachments/assets/7e416632-5850-4acb-b5ae-06e0270cf719" width="45%" />
+  <img src="https://github.com/user-attachments/assets/90cdcf29-04b2-478e-967d-7397d48e3605" width="20%" />
+</p>
+
+
+
+
 
 
