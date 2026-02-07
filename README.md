@@ -98,10 +98,10 @@ git clone https://github.com/sajid128/game-stat-bot.git
 <!-- Wide leaderboard images -->
 <p align="center">
   <img src="https://github.com/user-attachments/assets/2545cb3b-f81f-4333-ad78-7596ad0a91af"
-       width="48%" height="320px" style="object-fit: cover;" />
+       width="48%" height="420px" style="object-fit: cover;" />
   <span style="display:inline-block;width:2px;height:320px;background-color:#ccc;margin:0 5px;"></span>
   <img src="https://github.com/user-attachments/assets/7c8112a8-d08c-4d43-8c45-f148b1544780"
-       width="48%" height="320px" style="object-fit: cover;" />
+       width="48%" height="420px" style="object-fit: cover;" />
 </p>
 
 ---
@@ -109,10 +109,10 @@ git clone https://github.com/sajid128/game-stat-bot.git
 <!-- Very wide activity screenshot -->
 <p align="center">
   <img src="https://github.com/user-attachments/assets/420d0953-30c6-4f72-b6f9-3ba2901dc688"
-       width="48%" height="320px" style="object-fit: cover;" />
+       width="48%" height="350px" style="object-fit: cover;" />
   <span style="display:inline-block;width:2px;height:320px;background-color:#ccc;margin:0 5px;"></span>
   <img src="https://github.com/user-attachments/assets/90cdcf29-04b2-478e-967d-7397d48e3605"
-       width="48%" height="320px" style="object-fit: cover;" />
+       width="48%" height="350px" style="object-fit: cover;" />
 </p>
 
 ---
@@ -120,10 +120,10 @@ git clone https://github.com/sajid128/game-stat-bot.git
 <!-- Tall / narrow images grouped -->
 <p align="center">
   <img src="https://github.com/user-attachments/assets/917c1727-ca1c-44c0-8abb-ef58eb848792"
-       width="48%" height="320px" style="object-fit: cover;" />
+       width="48%" height="380px" style="object-fit: cover;" />
   <span style="display:inline-block;width:2px;height:320px;background-color:#ccc;margin:0 5px;"></span>
   <img src="https://github.com/user-attachments/assets/7e416632-5850-4acb-b5ae-06e0270cf719"
-       width="48%" height="320px" style="object-fit: cover;" />
+       width="48%" height="380px" style="object-fit: cover;" />
 </p>
 
 
