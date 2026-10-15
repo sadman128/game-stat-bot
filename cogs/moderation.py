@@ -78,7 +78,7 @@ class Moderation(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        """Anti-spam rule: Kick users who mention @everyone or @here 3 times in 1 minute."""
+        """Anti-spam rule: Kick users who mention @everyone or @here 5 times in 1 minute."""
         if not message.guild or message.author.bot:
             return
 
@@ -111,10 +111,10 @@ class Moderation(commands.Cog):
         ]
         self.mention_tracker[user_id].append(now)
 
-        # Trigger kick / softban if 3 mentions within 60s
-        if len(self.mention_tracker[user_id]) >= 3:
+        # Trigger kick / softban if 5 mentions within 60s
+        if len(self.mention_tracker[user_id]) >= 5:
             self.mention_tracker.pop(user_id, None)
-            reason = "Automod: Mentioned @everyone / @here 3 times in 1 minute (Spam)"
+            reason = "Automod: Mentioned @everyone / @here 5 times in 1 minute (Spam)"
 
             try:
                 # Softban: ban with 1 hour message purge, then immediately unban to act as kick
@@ -145,7 +145,7 @@ class Moderation(commands.Cog):
                     embed = discord.Embed(
                         title="🚨 Member Kicked (Anti-Mention Spam)",
                         description=(
-                            f"**{author}** (`{author.id}`) was kicked for mentioning `@everyone` / `@here` 3 times in 1 minute.\n"
+                            f"**{author}** (`{author.id}`) was kicked for mentioning `@everyone` / `@here` 5 times in 1 minute.\n"
                             f"🧹 **Action:** Kicked from server & messages from the past 1 hour were purged."
                         ),
                         color=discord.Color.red(),
