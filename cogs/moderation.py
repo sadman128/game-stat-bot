@@ -1,5 +1,7 @@
 import io
+import time
 import logging
+from collections import defaultdict
 import discord
 from discord.ext import commands
 
@@ -8,10 +10,12 @@ from config import config
 logger = logging.getLogger(__name__)
 
 class Moderation(commands.Cog):
-    """Moderation tools, audit logging for deleted messages and role updates."""
+    """Moderation tools, audit logging for deleted messages, role updates, and anti-spam."""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        # user_id -> [timestamp1, timestamp2, ...]
+        self.mention_tracker = defaultdict(list)
 
     @commands.command(name="msg")
     async def msg(self, ctx: commands.Context, *, message_content: str = None):
@@ -71,6 +75,86 @@ class Moderation(commands.Cog):
         except Exception as e:
             await ctx.send("⚠️ An error occurred.")
             logger.error(f"Error sending DM: {e}")
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        """Anti-spam rule: Kick users who mention @everyone or @here 3 times in 1 minute."""
+        if not message.guild or message.author.bot:
+            return
+
+        author = message.author
+        guild = message.guild
+
+        # Check if message mentions @everyone or @here
+        has_everyone_ping = (
+            message.mention_everyone
+            or "@everyone" in message.content
+            or "@here" in message.content
+        )
+        if not has_everyone_ping:
+            return
+
+        # Whitelist: Ignore guild owner, administrators, and bot authors
+        if (
+            author.id == guild.owner_id
+            or author.guild_permissions.administrator
+            or author.id in config.AUTHOR
+        ):
+            return
+
+        now = time.time()
+        user_id = author.id
+
+        # Keep timestamps from the last 60 seconds
+        self.mention_tracker[user_id] = [
+            t for t in self.mention_tracker[user_id] if now - t <= 60
+        ]
+        self.mention_tracker[user_id].append(now)
+
+        # Trigger kick / softban if 3 mentions within 60s
+        if len(self.mention_tracker[user_id]) >= 3:
+            self.mention_tracker.pop(user_id, None)
+            reason = "Automod: Mentioned @everyone / @here 3 times in 1 minute (Spam)"
+
+            try:
+                # Softban: ban with 1 hour message purge, then immediately unban to act as kick
+                await guild.ban(author, reason=reason, delete_message_seconds=3600)
+                await guild.unban(author, reason="Automod softban unban")
+                logger.info(f"Kicked and purged messages for {author} ({author.id}) for mention spam.")
+            except discord.Forbidden:
+                logger.error(f"Missing permissions to ban/kick {author}.")
+                return
+            except Exception as e:
+                logger.error(f"Failed to execute mention spam kick for {author}: {e}")
+                return
+
+            # Announce in YAP_CHAT
+            yap_channel = guild.get_channel(config.YAP_CHAT)
+            if yap_channel:
+                try:
+                    await yap_channel.send(
+                        f"⚠️ {author.mention} has been kicked from the server for possible spam."
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to send kick notice in YAP_CHAT: {e}")
+
+            # Log to DELETE_LOG
+            log_channel = guild.get_channel(config.DELETE_LOG)
+            if log_channel:
+                try:
+                    embed = discord.Embed(
+                        title="🚨 Member Kicked (Anti-Mention Spam)",
+                        description=(
+                            f"**{author}** (`{author.id}`) was kicked for mentioning `@everyone` / `@here` 3 times in 1 minute.\n"
+                            f"🧹 **Action:** Kicked from server & messages from the past 1 hour were purged."
+                        ),
+                        color=discord.Color.red(),
+                        timestamp=discord.utils.utcnow()
+                    )
+                    embed.set_footer(text="Automod Protection")
+                    await log_channel.send(embed=embed)
+                except Exception as e:
+                    logger.error(f"Failed to log kick event in DELETE_LOG: {e}")
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
