@@ -1,4 +1,6 @@
-import subprocess
+import os
+import sys
+import asyncio
 import logging
 from discord.ext import commands
 
@@ -14,23 +16,25 @@ class Admin(commands.Cog):
 
     @commands.command(name="restart")
     async def restart(self, ctx: commands.Context):
-        """Restart bot via PM2 (Author only)."""
+        """Restart the bot process in-place (Author only)."""
         if ctx.author.id not in config.AUTHOR:
             await ctx.reply("You are not authorized to do that.")
             return
 
-        await ctx.reply("Restarting bot...")
+        await ctx.reply("🔄 Restarting bot...")
         logger.info(f"Restart initiated by {ctx.author} ({ctx.author.id})")
 
+        # Allow message to send and flush Discord gateway
+        await asyncio.sleep(1)
+
+        # Close Discord bot connection gracefully
         try:
-            subprocess.Popen(
-                ["pm2", "restart", "discord-bot"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
+            await self.bot.close()
         except Exception as e:
-            logger.error(f"Failed to execute PM2 restart: {e}")
-            await ctx.send(f"⚠️ Failed to trigger restart command: {e}")
+            logger.error(f"Error closing bot session: {e}")
+
+        # In-place process restart using current python executable and args (/home/container/main.py)
+        os.execv(sys.executable, [sys.executable] + sys.argv)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Admin(bot))
