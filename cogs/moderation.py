@@ -116,6 +116,27 @@ class Moderation(commands.Cog):
             self.mention_tracker.pop(user_id, None)
             reason = "Automod: Mentioned @everyone / @here 5 times in 1 minute (Spam)"
 
+            # DM user before kicking them (must be done while still in the guild)
+            admin_role = guild.get_role(config.ROLE_ADMIN)
+            if admin_role and admin_role.members:
+                admin_contacts = ", ".join(m.mention for m in admin_role.members)
+            elif admin_role:
+                admin_contacts = admin_role.mention
+            else:
+                admin_contacts = ", ".join(f"<@{aid}>" for aid in config.AUTHOR)
+
+            dm_text = (
+                f"You have been kicked from **{guild.name}** for mentioning everyone or here too much "
+                f"which triggered possible spam, if you think this was false, contact {admin_contacts}."
+            )
+
+            try:
+                await author.send(dm_text)
+            except discord.Forbidden:
+                logger.info(f"Could not DM {author} (DMs closed/blocked).")
+            except Exception as e:
+                logger.error(f"Failed to send DM to {author}: {e}")
+
             try:
                 # Softban: ban with 1 hour message purge, then immediately unban to act as kick
                 await guild.ban(author, reason=reason, delete_message_seconds=3600)
