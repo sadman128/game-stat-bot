@@ -224,10 +224,9 @@ class Voice(commands.Cog):
                 except Exception as e:
                     logger.error(f"Failed to unmute/undeafen {member}: {e}")
 
-            # 2. Retaliate if disconnected by someone else
+            # 2. Retaliate if disconnected by someone else (silent and instant)
             if before.channel is not None and after.channel is None and member.guild:
                 guild = member.guild
-                await asyncio.sleep(0.5)
                 try:
                     async for entry in guild.audit_logs(limit=5, action=discord.AuditLogAction.member_disconnect):
                         time_diff = (datetime.datetime.now(pytz.UTC) - entry.created_at).total_seconds()
@@ -243,13 +242,8 @@ class Voice(commands.Cog):
 
                                 if culprit and culprit.voice and culprit.voice.channel:
                                     try:
-                                        await culprit.move_to(None, reason="Beast mode retaliation: disconnected protected user")
-                                        logger.info(f"Beast mode: Disconnected {culprit} for disconnecting {member}.")
-                                        yap_channel = guild.get_channel(config.YAP_CHAT)
-                                        if yap_channel:
-                                            await yap_channel.send(
-                                                f"⚡ {culprit.mention} got disconnected for disconnecting {member.mention} (Beast Mode ON)."
-                                            )
+                                        await culprit.move_to(None)
+                                        logger.info(f"Beast mode: Silently disconnected {culprit} for disconnecting {member}.")
                                     except discord.Forbidden:
                                         logger.warning(f"Missing permissions to disconnect culprit {culprit}.")
                                     except Exception as e:
