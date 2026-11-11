@@ -129,9 +129,12 @@ class Voice(commands.Cog):
             await ctx.reply("fuck you")
             return
 
-        self.beast = 1 if self.beast == 0 else 0
-        state_str = "ON" if self.beast == 1 else "OFF"
-        await ctx.reply(f"Beast mode is {state_str}")
+        if self.beast == 0:
+            self.beast = 1
+            await ctx.reply("Beast mode is ON")
+        else:
+            self.beast = 0
+            await ctx.reply("Beast mode is OFF")
 
     @commands.command(name="nodc")
     async def nodc_mode(self, ctx: commands.Context):
@@ -140,9 +143,12 @@ class Voice(commands.Cog):
             await ctx.reply("fuck you")
             return
 
-        self.no_disconnect = 1 if self.no_disconnect == 0 else 0
-        state_str = "ON" if self.no_disconnect == 1 else "OFF"
-        await ctx.reply(f"No Disconnect mode is {state_str}")
+        if self.no_disconnect == 0:
+            self.no_disconnect = 1
+            await ctx.reply("No Disconnect mode is ON")
+        else:
+            self.no_disconnect = 0
+            await ctx.reply("No Disconnect mode is OFF")
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
@@ -194,18 +200,16 @@ class Voice(commands.Cog):
 
         # ---------- BEAST MODE PROTECTION ----------
         if member.id == config.TARGET_ID and self.beast == 1:
-            if after.channel:
-                server_muted = after.mute and not after.self_mute
-                server_deafened = after.deaf and not after.self_deaf
-
-                if server_muted or server_deafened:
-                    try:
-                        if server_muted:
-                            await member.edit(mute=False)
-                        if server_deafened:
-                            await member.edit(deafen=False)
-                    except Exception as e:
-                        logger.error(f"Failed to unmute/undeafen {member}: {e}")
+            if after.channel and (after.mute or after.deaf):
+                try:
+                    edit_kwargs = {}
+                    if after.mute:
+                        edit_kwargs["mute"] = False
+                    if after.deaf:
+                        edit_kwargs["deafen"] = False
+                    await member.edit(**edit_kwargs)
+                except Exception as e:
+                    logger.error(f"Failed to unmute/undeafen {member}: {e}")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Voice(bot))
