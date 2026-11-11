@@ -14,9 +14,10 @@ class Voice(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.beast: int = 0
+        self.beast: dict[int, int] = {}
         self.no_disconnect: int = 1
         self.timeout_checker: dict[int, datetime.datetime] = {}
+        self.last_beast_disconnect_id = None
 
     async def log_vc_event(self, member: discord.Member, channel: discord.VoiceChannel, action: str):
         """Log voice join/leave events to the designated log channel."""
@@ -123,18 +124,29 @@ class Voice(commands.Cog):
             await ctx.send(status_text)
 
     @commands.command(name="beast")
-    async def beast_mode(self, ctx: commands.Context):
-        """Toggle anti-server-mute/deafen protection for target author."""
-        if ctx.author.id != config.TARGET_ID:
+    async def beast_mode(self, ctx: commands.Context, target: discord.Member = None):
+        """Toggle anti-server-mute/deafen protection for author or mentioned user."""
+        if ctx.author.id != config.TARGET_ID and ctx.author.id not in config.AUTHOR:
             await ctx.reply("fuck you")
             return
 
-        if self.beast == 0:
-            self.beast = 1
-            await ctx.reply("Beast mode is ON")
+        if target is None:
+            target = ctx.author
+
+        current_status = self.beast.get(target.id, 0)
+
+        if current_status == 0:
+            self.beast[target.id] = 1
+            if target == ctx.author:
+                await ctx.reply("Beast mode is ON")
+            else:
+                await ctx.reply(f"Beast mode is ON for {target.mention}")
         else:
-            self.beast = 0
-            await ctx.reply("Beast mode is OFF")
+            self.beast[target.id] = 0
+            if target == ctx.author:
+                await ctx.reply("Beast mode is OFF")
+            else:
+                await ctx.reply(f"Beast mode is OFF for {target.mention}")
 
     @commands.command(name="nodc")
     async def nodc_mode(self, ctx: commands.Context):
@@ -199,7 +211,8 @@ class Voice(commands.Cog):
                 logger.error(f"Audit log check failed: {e}")
 
         # ---------- BEAST MODE PROTECTION ----------
-        if member.id == config.TARGET_ID and self.beast == 1:
+        if self.beast.get(member.id, 0) == 1:
+            # 1. Un-mute / un-deafen if server-muted or server-deafened
             if after.channel and (after.mute or after.deaf):
                 try:
                     edit_kwargs = {}
@@ -210,6 +223,42 @@ class Voice(commands.Cog):
                     await member.edit(**edit_kwargs)
                 except Exception as e:
                     logger.error(f"Failed to unmute/undeafen {member}: {e}")
+
+            # 2. Retaliate if disconnected by someone else
+            if before.channel is not None and after.channel is None and member.guild:
+                guild = member.guild
+                await asyncio.sleep(0.5)
+                try:
+                    async for entry in guild.audit_logs(limit=5, action=discord.AuditLogAction.member_disconnect):
+                        time_diff = (datetime.datetime.now(pytz.UTC) - entry.created_at).total_seconds()
+                        if time_diff < 8 and entry.user and entry.user.id != member.id and entry.user.id != self.bot.user.id:
+                            if entry.id != self.last_beast_disconnect_id:
+                                self.last_beast_disconnect_id = entry.id
+                                culprit = guild.get_member(entry.user.id)
+                                if culprit is None:
+                                    try:
+                                        culprit = await guild.fetch_member(entry.user.id)
+                                    except Exception:
+                                        culprit = None
+
+                                if culprit and culprit.voice and culprit.voice.channel:
+                                    try:
+                                        await culprit.move_to(None, reason="Beast mode retaliation: disconnected protected user")
+                                        logger.info(f"Beast mode: Disconnected {culprit} for disconnecting {member}.")
+                                        yap_channel = guild.get_channel(config.YAP_CHAT)
+                                        if yap_channel:
+                                            await yap_channel.send(
+                                                f"⚡ {culprit.mention} got disconnected for disconnecting {member.mention} (Beast Mode ON)."
+                                            )
+                                    except discord.Forbidden:
+                                        logger.warning(f"Missing permissions to disconnect culprit {culprit}.")
+                                    except Exception as e:
+                                        logger.error(f"Failed to disconnect culprit {culprit}: {e}")
+                            break
+                except discord.Forbidden:
+                    pass
+                except Exception as e:
+                    logger.error(f"Error checking audit logs for beast disconnect: {e}")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Voice(bot))
