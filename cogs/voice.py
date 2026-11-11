@@ -243,16 +243,19 @@ class Voice(commands.Cog):
                                 if culprit and culprit.voice and culprit.voice.channel:
                                     try:
                                         await culprit.move_to(None)
-                                        logger.info(f"Beast mode: Silently disconnected {culprit} for disconnecting {member}.")
+                                        print(f"Beast mode: Silently disconnected {culprit} for disconnecting {member}.")
                                     except discord.Forbidden:
-                                        logger.warning(f"Missing permissions to disconnect culprit {culprit}.")
+                                        print(f"Beast mode: Missing permissions to disconnect culprit {culprit}.")
                                     except Exception as e:
-                                        logger.error(f"Failed to disconnect culprit {culprit}: {e}")
+                                        print(f"Beast mode: Failed to disconnect culprit {culprit}: {e}")
+                                else:
+                                    culprit_name = culprit if culprit else (entry.user.name if entry.user else entry.user_id)
+                                    print(f"Beast mode: Culprit {culprit_name} disconnected {member}, but is not in any voice channel.")
                             break
                 except discord.Forbidden:
-                    pass
+                    print("Beast mode: Bot lacks permission to read audit logs.")
                 except Exception as e:
-                    logger.error(f"Error checking audit logs for beast disconnect: {e}")
+                    print(f"Beast mode: Error checking audit logs: {e}")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Voice(bot))
