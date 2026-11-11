@@ -125,8 +125,8 @@ class Voice(commands.Cog):
 
     @commands.command(name="beast")
     async def beast_mode(self, ctx: commands.Context, target: discord.Member = None):
-        """Toggle anti-server-mute/deafen protection for author or mentioned user."""
-        if ctx.author.id != config.TARGET_ID and ctx.author.id not in config.AUTHOR:
+        """Toggle anti-server-mute/deafen protection for target_id or mentioned user."""
+        if ctx.author.id != config.TARGET_ID:
             await ctx.reply("fuck you")
             return
 
